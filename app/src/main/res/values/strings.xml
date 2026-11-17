@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">ShopBill</string>
+    <string name="tagline_welcome">Fast, crisp billing &amp; digital receipts for your shop</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="sign_out">Sign out</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_bills">Bills</string>
+    <string name="nav_customers">Customers</string>
+    <string name="nav_catalog">Items</string>
+    <string name="new_bill">New Bill</string>
+    <string name="walk_in_customer">Walk-in Customer</string>
+    <string name="default_shop_name">My Shop</string>
+    <string name="default_receipt_footer">Thank you for shopping with us!</string>
+    <string name="share_receipt">Share</string>
+    <string name="print_pdf">Print / PDF</string>
+    <string name="record_payment">Record Payment</string>
+    <string name="void_bill">Void Bill</string>
+    <string name="empty_bills_title">No bills issued yet</string>
+    <string name="empty_bills_subtitle">Tap New Bill to ring up your first customer and generate a crisp digital receipt.</string>
+    <string name="empty_customers_title">No customers added yet</string>
+    <string name="empty_customers_subtitle">Save repeat customers to track purchase history and credit balances.</string>
+    <string name="empty_catalog_title">Your item catalog is empty</string>
+    <string name="empty_catalog_subtitle">Add popular items once for 1-tap billing at the counter.</string>
+</resources>

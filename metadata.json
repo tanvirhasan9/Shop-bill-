@@ -1,0 +1,6 @@
+{
+  "name": "ShopBill",
+  "description": "A shop customer billing and receipt management app with itemized invoices, customer records, and cloud sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

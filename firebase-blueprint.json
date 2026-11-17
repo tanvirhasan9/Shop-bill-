@@ -1,0 +1,373 @@
+{
+  "entities": {
+    "ShopProfile": {
+      "title": "ShopProfile",
+      "description": "Shopkeeper business profile, receipt branding, currency, tax rate, and sequential bill counter.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the shop owner."
+        },
+        "shopName": {
+          "type": "string",
+          "description": "Display name of the shop printed on receipts."
+        },
+        "shopPhone": {
+          "type": "string",
+          "description": "Shop contact phone number."
+        },
+        "shopAddress": {
+          "type": "string",
+          "description": "Shop street address printed on receipts."
+        },
+        "currencySymbol": {
+          "type": "string",
+          "description": "Currency symbol used across prices and receipts."
+        },
+        "taxPercent": {
+          "type": "number",
+          "description": "Default tax percentage applied to new bills (0 to 100)."
+        },
+        "receiptFooter": {
+          "type": "string",
+          "description": "Closing thank-you message printed at the bottom of receipts."
+        },
+        "nextBillNumber": {
+          "type": "integer",
+          "description": "Sequential counter for generating invoice numbers."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when shop profile was created (clients must submit FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last update (clients must submit FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "shopName",
+        "shopPhone",
+        "shopAddress",
+        "currencySymbol",
+        "taxPercent",
+        "receiptFooter",
+        "nextBillNumber",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Shop customer profile and cumulative spend/due ledger.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the shop owner."
+        },
+        "name": {
+          "type": "string",
+          "description": "Customer full name."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone number."
+        },
+        "email": {
+          "type": "string",
+          "description": "Customer email address."
+        },
+        "address": {
+          "type": "string",
+          "description": "Customer address."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes about the customer."
+        },
+        "totalSpent": {
+          "type": "number",
+          "description": "Cumulative billed total for this customer."
+        },
+        "totalDue": {
+          "type": "number",
+          "description": "Current unpaid balance owed by this customer."
+        },
+        "billCount": {
+          "type": "integer",
+          "description": "Total number of bills issued to this customer."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when customer was created (clients must submit FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last update (clients must submit FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "phone",
+        "email",
+        "address",
+        "notes",
+        "totalSpent",
+        "totalDue",
+        "billCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ShopProduct": {
+      "title": "ShopProduct",
+      "description": "Catalog product or service for quick billing.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the shop owner."
+        },
+        "name": {
+          "type": "string",
+          "description": "Item or service name."
+        },
+        "sku": {
+          "type": "string",
+          "description": "Optional SKU or short item code."
+        },
+        "category": {
+          "type": "string",
+          "description": "Product category label."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Unit selling price."
+        },
+        "unitLabel": {
+          "type": "string",
+          "description": "Unit of measure (e.g. pcs, kg, box)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when product was created (clients must submit FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last update (clients must submit FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "sku",
+        "category",
+        "unitPrice",
+        "unitLabel",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Bill": {
+      "title": "Bill",
+      "description": "Customer bill and digital receipt header with totals and payment status.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the shop owner."
+        },
+        "billNumber": {
+          "type": "string",
+          "description": "Formatted invoice number (e.g. INV-1001)."
+        },
+        "customerId": {
+          "type": "string",
+          "description": "Referenced Customer document ID, or empty string for Walk-in Customer."
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Customer name snapshot printed on the receipt."
+        },
+        "customerPhone": {
+          "type": "string",
+          "description": "Customer phone snapshot printed on the receipt."
+        },
+        "subtotal": {
+          "type": "number",
+          "description": "Sum of line item totals before discount and tax."
+        },
+        "discountAmount": {
+          "type": "number",
+          "description": "Flat discount applied to the bill."
+        },
+        "taxPercent": {
+          "type": "number",
+          "description": "Tax rate percentage applied to taxable amount."
+        },
+        "taxAmount": {
+          "type": "number",
+          "description": "Calculated tax amount."
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Final grand total payable."
+        },
+        "paidAmount": {
+          "type": "number",
+          "description": "Amount paid by the customer so far."
+        },
+        "dueAmount": {
+          "type": "number",
+          "description": "Remaining unpaid balance."
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["CASH", "CARD", "UPI", "BANK", "CREDIT"],
+          "description": "Payment tender method."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PAID", "PARTIAL", "UNPAID", "VOID"],
+          "description": "Settlement status of the bill."
+        },
+        "itemCount": {
+          "type": "integer",
+          "description": "Number of line items in this bill."
+        },
+        "itemsSummary": {
+          "type": "string",
+          "description": "Human-readable preview of top line items."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional receipt notes."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when bill was issued (clients must submit FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last update (clients must submit FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "billNumber",
+        "customerId",
+        "customerName",
+        "customerPhone",
+        "subtotal",
+        "discountAmount",
+        "taxPercent",
+        "taxAmount",
+        "totalAmount",
+        "paidAmount",
+        "dueAmount",
+        "paymentMethod",
+        "status",
+        "itemCount",
+        "itemsSummary",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "BillLineItem": {
+      "title": "BillLineItem",
+      "description": "Individual purchased item row belonging to a Bill.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the shop owner."
+        },
+        "billId": {
+          "type": "string",
+          "description": "Parent Bill document ID."
+        },
+        "productId": {
+          "type": "string",
+          "description": "Optional catalog product ID or empty string."
+        },
+        "name": {
+          "type": "string",
+          "description": "Item description printed on receipt."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity purchased (> 0)."
+        },
+        "unitLabel": {
+          "type": "string",
+          "description": "Unit of measure."
+        },
+        "unitPrice": {
+          "type": "number",
+          "description": "Unit price at time of sale."
+        },
+        "lineTotal": {
+          "type": "number",
+          "description": "Quantity multiplied by unit price."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when line item was created (clients must submit FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last update (clients must submit FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "billId",
+        "productId",
+        "name",
+        "quantity",
+        "unitLabel",
+        "unitPrice",
+        "lineTotal",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/ShopProfile" },
+      "description": "Shop profile and receipt configuration scoped to each authenticated shopkeeper."
+    },
+    "/users/{userId}/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Customer directory and credit ledger scoped to the authenticated shopkeeper."
+    },
+    "/users/{userId}/products/{productId}": {
+      "schema": { "$ref": "#/entities/ShopProduct" },
+      "description": "Shop item catalog scoped to the authenticated shopkeeper."
+    },
+    "/users/{userId}/bills/{billId}": {
+      "schema": { "$ref": "#/entities/Bill" },
+      "description": "Customer bills and digital receipts scoped to the authenticated shopkeeper."
+    },
+    "/users/{userId}/bills/{billId}/items/{itemId}": {
+      "schema": { "$ref": "#/entities/BillLineItem" },
+      "description": "Itemized line items belonging to a customer bill."
+    }
+  }
+}

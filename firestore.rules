@@ -1,0 +1,304 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Global Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isNonNegNumber(val) {
+      return (val is int || val is float) && val >= 0;
+    }
+
+    function isPositiveNumber(val) {
+      return (val is int || val is float) && val > 0;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    // --- Entity Validators ---
+    function isValidShopProfile(data, userId) {
+      return data.userId == userId &&
+             data.shopName is string && data.shopName.size() >= 1 && data.shopName.size() <= 80 &&
+             data.shopPhone is string && data.shopPhone.size() <= 30 &&
+             data.shopAddress is string && data.shopAddress.size() <= 150 &&
+             data.currencySymbol is string && data.currencySymbol.size() >= 1 && data.currencySymbol.size() <= 6 &&
+             (data.taxPercent is int || data.taxPercent is float) && data.taxPercent >= 0 && data.taxPercent <= 100 &&
+             data.receiptFooter is string && data.receiptFooter.size() <= 120 &&
+             data.nextBillNumber is int && data.nextBillNumber >= 1 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidCustomer(data, userId) {
+      return data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.phone is string && data.phone.size() <= 30 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.address is string && data.address.size() <= 150 &&
+             data.notes is string && data.notes.size() <= 200 &&
+             isNonNegNumber(data.totalSpent) &&
+             isNonNegNumber(data.totalDue) &&
+             data.billCount is int && data.billCount >= 0 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidProduct(data, userId) {
+      return data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.sku is string && data.sku.size() <= 32 &&
+             data.category is string && data.category.size() <= 40 &&
+             isNonNegNumber(data.unitPrice) &&
+             data.unitLabel is string && data.unitLabel.size() >= 1 && data.unitLabel.size() <= 20 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPaymentMethod(method) {
+      return method in ['CASH', 'CARD', 'UPI', 'BANK', 'CREDIT'];
+    }
+
+    function isValidBillStatus(status) {
+      return status in ['PAID', 'PARTIAL', 'UNPAID', 'VOID'];
+    }
+
+    function isValidBill(data, userId) {
+      return data.userId == userId &&
+             data.billNumber is string && data.billNumber.size() >= 1 && data.billNumber.size() <= 32 &&
+             data.customerId is string && data.customerId.size() <= 128 &&
+             (data.customerId == '' || isValidId(data.customerId)) &&
+             data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 80 &&
+             data.customerPhone is string && data.customerPhone.size() <= 30 &&
+             isNonNegNumber(data.subtotal) &&
+             isNonNegNumber(data.discountAmount) &&
+             (data.taxPercent is int || data.taxPercent is float) && data.taxPercent >= 0 && data.taxPercent <= 100 &&
+             isNonNegNumber(data.taxAmount) &&
+             isNonNegNumber(data.totalAmount) &&
+             isNonNegNumber(data.paidAmount) &&
+             isNonNegNumber(data.dueAmount) &&
+             isValidPaymentMethod(data.paymentMethod) &&
+             isValidBillStatus(data.status) &&
+             data.itemCount is int && data.itemCount >= 1 &&
+             data.itemsSummary is string && data.itemsSummary.size() <= 200 &&
+             data.notes is string && data.notes.size() <= 200 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidBillLineItem(data, userId, billId) {
+      return data.userId == userId &&
+             data.billId == billId &&
+             data.productId is string && data.productId.size() <= 128 &&
+             (data.productId == '' || isValidId(data.productId)) &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             isPositiveNumber(data.quantity) &&
+             data.unitLabel is string && data.unitLabel.size() >= 1 && data.unitLabel.size() <= 20 &&
+             isNonNegNumber(data.unitPrice) &&
+             isNonNegNumber(data.lineTotal) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    // --- Shop Profile ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'shopName', 'shopPhone', 'shopAddress',
+                         'currencySymbol', 'taxPercent', 'receiptFooter',
+                         'nextBillNumber', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'shopName', 'shopPhone', 'shopAddress',
+                         'currencySymbol', 'taxPercent', 'receiptFooter',
+                         'nextBillNumber', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidShopProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidShopProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         // Action: Update Shop Settings
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'shopName', 'shopPhone', 'shopAddress', 'currencySymbol',
+                           'taxPercent', 'receiptFooter', 'updatedAt'
+                         ]) ||
+                         // Action: Advance Bill Sequence Number
+                         (incoming().nextBillNumber >= existing().nextBillNumber &&
+                          incoming().diff(existing()).affectedKeys().hasOnly(['nextBillNumber', 'updatedAt']))
+                       );
+
+      allow delete: if false;
+
+      // --- Customers ---
+      match /customers/{customerId} {
+        allow get: if isOwner(userId) && isValidId(customerId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(customerId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'name', 'phone', 'email', 'address', 'notes',
+                           'totalSpent', 'totalDue', 'billCount', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'name', 'phone', 'email', 'address', 'notes',
+                           'totalSpent', 'totalDue', 'billCount', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidCustomer(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(customerId) &&
+                         isValidCustomer(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt && (
+                           // Action: Edit Customer Profile Details
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'name', 'phone', 'email', 'address', 'notes', 'updatedAt'
+                           ]) ||
+                           // Action: Update Customer Financial Ledger Totals
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'totalSpent', 'totalDue', 'billCount', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(customerId);
+      }
+
+      // --- Shop Products / Catalog ---
+      match /products/{productId} {
+        allow get: if isOwner(userId) && isValidId(productId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(productId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'name', 'sku', 'category',
+                           'unitPrice', 'unitLabel', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'name', 'sku', 'category',
+                           'unitPrice', 'unitLabel', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidProduct(incoming(), userId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(productId) &&
+                         isValidProduct(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'name', 'sku', 'category', 'unitPrice', 'unitLabel', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(productId);
+      }
+
+      // --- Customer Bills & Receipts ---
+      match /bills/{billId} {
+        allow get: if isOwner(userId) && isValidId(billId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(billId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'billNumber', 'customerId', 'customerName', 'customerPhone',
+                           'subtotal', 'discountAmount', 'taxPercent', 'taxAmount', 'totalAmount',
+                           'paidAmount', 'dueAmount', 'paymentMethod', 'status',
+                           'itemCount', 'itemsSummary', 'notes', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'billNumber', 'customerId', 'customerName', 'customerPhone',
+                           'subtotal', 'discountAmount', 'taxPercent', 'taxAmount', 'totalAmount',
+                           'paidAmount', 'dueAmount', 'paymentMethod', 'status',
+                           'itemCount', 'itemsSummary', 'notes', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidBill(incoming(), userId) &&
+                         (incoming().customerId == '' ||
+                          exists(/databases/$(database)/documents/users/$(userId)/customers/$(incoming().customerId)));
+
+        allow update: if isOwner(userId) &&
+                         isValidId(billId) &&
+                         isValidBill(incoming(), userId) &&
+                         existing().status != 'VOID' &&
+                         incoming().userId == existing().userId &&
+                         incoming().billNumber == existing().billNumber &&
+                         incoming().customerId == existing().customerId &&
+                         incoming().createdAt == existing().createdAt && (
+                           // Action: Record Payment
+                           (incoming().status in ['PAID', 'PARTIAL', 'UNPAID'] &&
+                            incoming().diff(existing()).affectedKeys().hasOnly([
+                              'paidAmount', 'dueAmount', 'status', 'paymentMethod', 'updatedAt'
+                            ])) ||
+                           // Action: Void Bill (terminal state)
+                           (incoming().status == 'VOID' &&
+                            incoming().dueAmount == 0 &&
+                            incoming().diff(existing()).affectedKeys().hasOnly([
+                              'status', 'dueAmount', 'updatedAt'
+                            ])) ||
+                           // Action: Edit Receipt Notes
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'notes', 'updatedAt'
+                           ])
+                         );
+
+        allow delete: if isOwner(userId) && isValidId(billId);
+
+        // --- Bill Line Items ---
+        match /items/{itemId} {
+          allow get: if isOwner(userId) && isValidId(billId) && isValidId(itemId);
+          allow list: if isOwner(userId) && isValidId(billId);
+
+          allow create: if isOwner(userId) &&
+                           isValidId(billId) &&
+                           isValidId(itemId) &&
+                           incoming().keys().hasAll([
+                             'userId', 'billId', 'productId', 'name',
+                             'quantity', 'unitLabel', 'unitPrice', 'lineTotal',
+                             'createdAt', 'updatedAt'
+                           ]) &&
+                           incoming().keys().hasOnly([
+                             'userId', 'billId', 'productId', 'name',
+                             'quantity', 'unitLabel', 'unitPrice', 'lineTotal',
+                             'createdAt', 'updatedAt'
+                           ]) &&
+                           isValidBillLineItem(incoming(), userId, billId) &&
+                           existsAfter(/databases/$(database)/documents/users/$(userId)/bills/$(billId));
+
+          allow update: if false;
+
+          allow delete: if isOwner(userId) && isValidId(billId) && isValidId(itemId);
+        }
+      }
+    }
+  }
+}
